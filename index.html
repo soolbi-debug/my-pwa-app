@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a365d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="교직원검색">
+<meta name="mobile-web-app-capable" content="yes">
+<title>광휘고 교직원 검색</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    background: #f0f4f8;
+    color: #2d3748;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+    color: white;
+    padding: env(safe-area-inset-top, 0) 0 0;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  .header-inner { padding: 16px 16px 20px; }
+  .header h1 { font-size: 16px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.3px; }
+  .search-box { position: relative; max-width: 500px; margin: 0 auto; }
+  .search-box input {
+    width: 100%; padding: 13px 44px 13px 16px;
+    border-radius: 14px; border: none; font-size: 16px;
+    background: rgba(255,255,255,0.96); color: #1a202c;
+    outline: none; box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    font-family: inherit;
+  }
+  .search-box input::placeholder { color: #a0aec0; }
+  .search-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 17px; pointer-events: none; }
+  .clear-btn {
+    display: none; position: absolute; right: 38px; top: 50%; transform: translateY(-50%);
+    background: #a0aec0; border: none; border-radius: 50%; width: 20px; height: 20px;
+    font-size: 12px; color: white; cursor: pointer; line-height: 20px; text-align: center;
+  }
+  .result-count { text-align: center; padding: 12px 16px 4px; font-size: 13px; color: #718096; min-height: 36px; }
+  .container { padding: 4px 12px 32px; max-width: 600px; margin: 0 auto; }
+  .card {
+    background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); border-left: 4px solid #3182ce;
+    animation: fadeIn 0.18s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .name-block { flex: 1; min-width: 0; }
+  .name { font-size: 20px; font-weight: 700; color: #1a202c; letter-spacing: -0.5px; }
+  .position-text { font-size: 13px; color: #718096; margin-top: 3px; }
+  .dept-badge {
+    background: #ebf8ff; color: #2b6cb0; font-size: 11px; font-weight: 700;
+    padding: 5px 10px; border-radius: 20px; white-space: nowrap;
+    margin-left: 8px; align-self: flex-start; margin-top: 2px; flex-shrink: 0;
+  }
+  .contact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .contact-item { background: #f7fafc; border-radius: 12px; padding: 10px 12px; }
+  .contact-item.full { grid-column: 1 / -1; }
+  .contact-label { font-size: 10px; color: #a0aec0; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 5px; text-transform: uppercase; }
+  .contact-value { font-size: 15px; font-weight: 700; color: #2d3748; }
+  .contact-item a {
+    color: #2b6cb0; text-decoration: none; font-size: 15px; font-weight: 700;
+    display: block; padding: 2px 0;
+  }
+  .duties-section { background: #f7fafc; border-radius: 12px; padding: 11px 13px; }
+  .duties-label { font-size: 10px; color: #a0aec0; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .duties-text { font-size: 13px; color: #4a5568; line-height: 1.65; }
+  .empty-state { text-align: center; padding: 72px 24px; color: #a0aec0; }
+  .empty-state .icon { font-size: 52px; margin-bottom: 14px; }
+  .empty-state p { font-size: 16px; color: #718096; }
+  .empty-state small { font-size: 13px; color: #a0aec0; margin-top: 8px; display: block; }
+  .welcome { text-align: center; padding: 60px 24px 24px; color: #718096; }
+  .welcome .icon { font-size: 52px; margin-bottom: 14px; }
+  .welcome p { font-size: 15px; }
+  .highlight { background: #fef08a; border-radius: 3px; padding: 0 2px; }
+  .card.admin { border-left-color: #d69e2e; }
+  .card.grade1 { border-left-color: #38a169; }
+  .card.grade2 { border-left-color: #805ad5; }
+  .card.grade3 { border-left-color: #e53e3e; }
+  .card.admin .dept-badge { background: #fffbeb; color: #b7791f; }
+  .card.grade1 .dept-badge { background: #f0fff4; color: #276749; }
+  .card.grade2 .dept-badge { background: #faf5ff; color: #6b46c1; }
+  .card.grade3 .dept-badge { background: #fff5f5; color: #c53030; }
+  .no-phone { color: #cbd5e0; font-size: 13px; }
+  .install-banner {
+    display: none; background: #2b6cb0; color: white;
+    padding: 12px 16px; text-align: center; font-size: 13px;
+    cursor: pointer; user-select: none;
+  }
+  .install-banner span { text-decoration: underline; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="install-banner" id="installBanner" onclick="installApp()">
+  📲 <span>홈 화면에 앱으로 설치하기</span>
+</div>
+<div class="header">
+  <div class="header-inner">
+    <h1>🏫 광휘고등학교 교직원 검색</h1>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="이름으로 검색 (예: 김성은)" oninput="doSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+      <span class="search-icon">🔍</span>
+    </div>
+  </div>
+</div>
+<div class="result-count" id="resultCount"></div>
+<div class="container" id="results">
+  <div class="welcome">
+    <div class="icon">👥</div>
+    <p>이름을 입력하면<br>교직원 정보를 검색합니다</p>
+  </div>
+</div>
+
+<script>
+// PWA 설치 지원
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'block';
+});
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function() {
+      deferredPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  }
+}
+window.addEventListener('appinstalled', function() {
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+// Service Worker 등록
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
+
+var staff = [
+  {name:"장현문", position:"교장", dept:"학교장", dc:"admin", phone:"010-4701-7949", ext:"9170", duties:"학교 교육 전반 총괄"},
+  {name:"정세영", position:"교감", dept:"교감", dc:"admin", phone:"010-8632-9120", ext:"9140", duties:"교무업무 총괄, 교원인사, 복무 관리, 학생 맞춤형 통합지원 총괄"},
+  {name:"최경원", position:"행정실장", dept:"행정실", dc:"admin", phone:"010-4030-0716", ext:"9101", duties:"행정 업무 총괄"},
+  {name:"이정아", position:"부장(영어)", dept:"교무기획부", dc:"", phone:"010-8911-7285", ext:"9141", duties:"부서 업무 총괄, 각종 행사·의식·회의 기획 주관, 인사, 각종 위원회 관리, 교무학사 관리(학사일정)"},
+  {name:"문용석", position:"수학", dept:"교무기획부", dc:"", phone:"010-8505-7575", ext:"9142", duties:"부서 공문서 처리, 교원현원명부 관리, 제규정 관리, 교직원 표창, 사정회, 방학 계획, 입학식·졸업식 계획, 교원 소요 및 정원계획, 신입생 및 고입 관련 업무, 성과급, 수능 업무, 교권보호, 청렴교육"},
+  {name:"조은채", position:"영어", dept:"교무기획부", dc:"", phone:"010-4233-3288", ext:"9143", duties:"성적관리 총괄(학업성적관리규정, 성적처리), 지필평가(정기고사) 계획 및 운영, 교내 수상 관련 업무, 수능 업무 지원"},
+  {name:"허련", position:"국어", dept:"교무기획부", dc:"", phone:"010-8421-7790", ext:"9144", duties:"나이스 총괄, 교무업무시스템 권한 관리, 생활기록부 관련 업무, 출결관리 총괄, 전입생 반 배정 협조, 대입전형자료생성, 수능 업무 지원"},
+  {name:"이선미", position:"물리", dept:"교무기획부", dc:"", phone:"010-3384-3034", ext:"9145", duties:"나이스 교사 배정, 수업시간표 작성, 수업시수 확보 계획 수립, 고사감독시간표 계획, 수능 업무 지원"},
+  {name:"고은아", position:"주무관(학적)", dept:"교무기획부", dc:"", phone:"010-6246-7321", ext:"9150", duties:"공문 접수·처리, 휴·복직 인사관리 업무, 학적업무(전·출입생, 재입학생, 정원외학생 관리), 품의 업무, 플로터 관리, 대표 전화 응대"},
+  {name:"조은샘", position:"부장(국어)", dept:"교육연구부", dc:"", phone:"010-8776-9294", ext:"9156", duties:"부서 업무 총괄, 학교교육과정운영 계획서 작성, 평가계획 관리, 학교평가"},
+  {name:"이정민", position:"수학", dept:"교육연구부", dc:"", phone:"010-3922-5157", ext:"9158", duties:"전국연합학력평가 총괄, 자율직무연수 지원, 교내 연수 취합, 교원능력개발평가 업무, 교생실습생 관리, 기초학력 향상 업무, 최소성취수준보장지도 업무"},
+  {name:"김인혜", position:"중국어", dept:"교육연구부", dc:"", phone:"010-8007-0810", ext:"9157", duties:"교내평가관리(수행평가 성적 관리, 지필평가 원안지 수합·검토·결재·인쇄관리), 교수학습평가계획 관리"},
+  {name:"한지연", position:"부장(지리)", dept:"미래교육부", dc:"", phone:"010-4195-3014", ext:"9171", duties:"미래교육 업무 총괄, 학교자율과제, 미래교육지구사업, 혁신학교평가, 신임부장워크숍 및 2월 신학기 교육과정 워크숍, 자율학교"},
+  {name:"이수산", position:"국어", dept:"미래교육부", dc:"", phone:"010-4034-2594", ext:"9172", duties:"미래교육업무(해오름교육과정), 전문적학습공동체, 수업혁신(수업공개 및 수업나눔협의회), 교육공동체 대토론회, 공유학교 학교맞춤형 프로그램, 수능 방송 지원 및 방송 동아리 담당"},
+  {name:"지영희", position:"영어", dept:"미래교육부", dc:"", phone:"010-6231-8167", ext:"9173", duties:"학생회 조직·운영, 학생자치(축제, 학생회장선거, 학생-학교장정담회), 선배동행 사업, 동상다몽사업"},
+  {name:"이경희", position:"교육공무직(방송)", dept:"미래교육부", dc:"", phone:"010-8785-7117", ext:"9160", duties:"방송실 운영 업무, 홈페이지 유지 및 관리, 학교안전공제회 담당, 방과후학교 회계업무, 비상연락망 및 내선번호 정비, 표창 및 장학금 업무"},
+  {name:"이홍주", position:"부장(윤리)", dept:"융합과정부", dc:"", phone:"010-4547-1037", ext:"9151", duties:"교육과정 편제 및 운영계획 수립, 교과협의회 주관, 교육과정위원회 운영, 공동교육과정 운영, 주문형 강좌 운영, 방과후학교 총괄, 학부모 대상 대입 및 교육과정 설명회 기획 및 운영"},
+  {name:"석서희", position:"수학", dept:"융합과정부", dc:"", phone:"010-9965-0804", ext:"9152", duties:"나이스 교육과정 편성, 과목 개설, 수강 학생 편성, 수강신청, 진급 및 반 편성, 교사 시간표 작성 보조자료 작성 및 학생 개인 시간표 작성 및 배부"},
+  {name:"서정희", position:"정보", dept:"융합과정부", dc:"", phone:"010-9476-6346", ext:"9153", duties:"온·오프라인 공동교육과정 강사 관리 및 수업 운영, 공동교육과정 거점센터 홈페이지 관리, 공강지도"},
+  {name:"김민아", position:"연극", dept:"융합과정부", dc:"", phone:"010-8649-1215", ext:"9154", duties:"온라인캠퍼스 수업 운영, 오프라인 공동교육과정 강사 관리 및 수업 운영, 수업 계획서 취합 및 내부결재, 공강지도"},
+  {name:"오혜란", position:"가정", dept:"융합과정부", dc:"", phone:"010-4193-9207", ext:"9159", duties:"교과서 선정업무, 전입생 미이수 중복이수 업무, 학교자율교육과정 운영, 창의적 체험활동 교육과정 운영, 학점인정형 공유학교"},
+  {name:"나광진", position:"부장(국어)", dept:"인문사회부", dc:"", phone:"010-4241-6402", ext:"9161", duties:"부서 업무 총괄, 인문사회계열 공문 및 행사 운영, 유네스코네트워크학교업무, 독서인문교육, 인성교육, 세계시민교육, 다문화교육"},
+  {name:"이다혜", position:"역사", dept:"인문사회부", dc:"", phone:"010-6808-2223", ext:"9162", duties:"인문사회계열 행사운영, 동아리 업무(동아리연합회, 휘랑제 동아리 발표회), 봉사활동 총괄"},
+  {name:"정금애", position:"사서", dept:"인문사회부(도서관)", dc:"", phone:"010-7130-8277", ext:"9163", duties:"학교도서관 운영·관리(도서관 이용교육, 아이디 발급, 독서로 관리, 장서구입·관리, 도서관 행사), 학교도서관운영위원회 운영"},
+  {name:"최선희", position:"부장(생물)", dept:"과학정보부", dc:"", phone:"010-9414-9117", ext:"9166", duties:"부서 업무 총괄, 과학정보부 운영계획, 정보공시업무"},
+  {name:"강태숙", position:"지구과학", dept:"과학정보부", dc:"", phone:"010-2913-9508", ext:"9167", duties:"과학실 안전관리계획, 과학실험실 폐수·폐기물 처리계획, 과학과 운영계획수립, 자율실험실 운영, 과학행사 운영, 과학실 운영 및 관리"},
+  {name:"양기훈", position:"기술", dept:"과학정보부", dc:"", phone:"010-6477-2066", ext:"9168", duties:"소모품·기자재 유지보수업체 관리, 학내 전산망 관리, 컴퓨터실 관리, 정보보안 및 정보통신윤리교육, 구글 교사·학생 계정 관리, 교사 노트북 관리, 학생용 태블릿 유지보수"},
+  {name:"박상권", position:"부장(체육)", dept:"문화예술체육부", dc:"", phone:"010-8900-5709", ext:"9176", duties:"문화예술체육 관련 업무 총괄, 체육관 및 운동장관리, 학생건강체력평가, 교내 학교스포츠클럽 계획 및 운영, 건강체력교실 계획 및 운영"},
+  {name:"김자영", position:"미술", dept:"문화예술체육부", dc:"", phone:"010-3724-0508", ext:"9177", duties:"교직원동아리 총괄, 교사급식지도 계획 및 운영, 탄소중립 자원순환교육, 교복 관련 업무, 문화예술 관련 업무 및 행사 주최"},
+  {name:"한송아", position:"보건교사", dept:"보건실", dc:"", phone:"010-6208-9349", ext:"", duties:"학교보건(보건실 관리, 감염병예방관리, 응급환자관리, 학생건강검진), 보건교육(약물오·남용예방, 성교육, 심폐소생술 교육), 건강기록부 관리, 위생환경관리"},
+  {name:"서아람", position:"영양교사", dept:"급식실", dc:"", phone:"010-6890-5175", ext:"9179", duties:"학교급식총괄, 영양교육 및 영양상담운영, 학부모급식모니터링관리, 위생교육, 학교급식경비(무상급식)운영, 조리종사원 위생관리"},
+  {name:"한정섭", position:"부장(수학)", dept:"생활안전기획부", dc:"", phone:"010-7752-9486", ext:"9181", duties:"부서 업무 총괄, 학교폭력예방 및 대처 총괄, 학교 안전 총괄"},
+  {name:"박군담", position:"수학(학교폭력책임교사)", dept:"생활안전기획부", dc:"", phone:"010-6317-1793", ext:"9183", duties:"학교폭력 및 실태조사, 특별교육이수기관 관리, 교내외 생활지도 계획 운영, 배움터지킴이 관련 업무"},
+  {name:"구미라", position:"상담사", dept:"상담실", dc:"", phone:"010-2361-7037", ext:"9189", duties:"학생·학부모 상담, 학생정서·행동특성검사, Wee클래스 운영, 자살예방교육, 또래상담반 운영, 학업중단숙려제도, 각종 중독학생 상담 및 관리"},
+  {name:"박선은", position:"부장(진로)", dept:"진로진학상담부", dc:"", phone:"010-8249-2233", ext:"9186", duties:"창의적체험활동(진로교육) 계획 수립·운영, 진로진학상담, 졸업생 수능업무, 전문 직업인 멘토 특강, 진로 표준화 심리검사, 1·2학년 학생·학부모 1:1 컨설팅, 3학년 모의면접 컨설팅"},
+  {name:"전아영", position:"심리학", dept:"진로진학상담부", dc:"", phone:"010-9938-3824", ext:"9187", duties:"공동교육과정 거점센터 홈페이지 관리, 온라인 공동교육과정 운영, 수강신청 관리, 온라인스튜디오 관리, 공강지도"},
+  {name:"강인혜", position:"특수교사(1반담임)", dept:"개별학습반", dc:"", phone:"010-9888-2121", ext:"9146", duties:"특수1반 담임, 특수교육 총괄(특수학급 운영계획, 개별화 협의회, 개별화교육계획 및 평가), 직업위탁교육, 장애인식개선교육"},
+  {name:"백수희", position:"특수교사(2반담임)", dept:"개별학습반", dc:"", phone:"010-8514-3973", ext:"9120", duties:"특수2반 담임, 학부모회, 통학비, 특수교육 물품구입"},
+  {name:"김남섭", position:"특수교사", dept:"개별학습반", dc:"", phone:"010-6855-5572", ext:"9110", duties:"인권교육, 성폭력·아동폭력 예방교육 등 계기 교육, 특수학급 현장체험학습"},
+  {name:"김성연", position:"특수교육지도사", dept:"개별학습반", dc:"", phone:"010-7559-8875", ext:"9199", duties:"특수교육 대상자 활동 보조"},
+  {name:"박자영", position:"부장(국어)", dept:"1학년부", dc:"grade1", phone:"010-2754-8478", ext:"9191", duties:"부서 업무 총괄, 입학식 운영, 봉사활동 운영, 교육과정선택 및 신학년도 학급편성, 자율교육과정 기획 및 운영, 현장 체험학습 총괄 업무"},
+  {name:"김주은", position:"음악(1-1)", dept:"1학년부", dc:"grade1", phone:"010-5103-0441", ext:"9111", duties:"진로진학상담부 업무 지원, 인문사회부 업무 지원(봉사활동, 동아리), 진로 행사 운영 지원, 태블릿 담당 업무 지원"},
+  {name:"이혜정", position:"일반사회(1-2)", dept:"1학년부", dc:"grade1", phone:"010-7283-8688", ext:"9112", duties:"융합과정부 업무 지원(선택과목), 창의적체험활동(학년·학급특색) 기획 및 운영"},
+  {name:"최은진", position:"영어(1-3)", dept:"1학년부", dc:"grade1", phone:"010-5646-6410", ext:"9113", duties:"미래교육부 업무지원(해오름교육복지 사제동행, 희망교실), 전문적 학습공동체운영, 수업공개 및 나눔 운영"},
+  {name:"정미라", position:"지리(1-4)", dept:"1학년부", dc:"grade1", phone:"010-7488-1209", ext:"9114", duties:"출결 관련 업무(월별 출석부 및 근태신고서 점검), 학생증 발급 업무"},
+  {name:"김재웅", position:"체육(1-5)", dept:"1학년부", dc:"grade1", phone:"010-3137-1549", ext:"9115", duties:"생활안전기획부 업무 지원, 성찰교실 운영 및 학년 생활지도"},
+  {name:"천지윤", position:"국어(1-6)", dept:"1학년부", dc:"grade1", phone:"010-3283-2887", ext:"9116", duties:"융합과정부 업무 지원(선택과목), 창의적체험활동(학년·학급특색) 기획 및 운영"},
+  {name:"이윤아", position:"도덕윤리(1-7)", dept:"1학년부", dc:"grade1", phone:"010-9923-1019", ext:"9117", duties:"교무기획부 업무 지원(학교생활기록부업무), 장학·표창"},
+  {name:"오재영", position:"역사(1-8)", dept:"1학년부", dc:"grade1", phone:"010-3177-7687", ext:"9118", duties:"수련활동 기획 및 운영"},
+  {name:"이화령", position:"수학(1-9)", dept:"1학년부", dc:"grade1", phone:"010-4950-6448", ext:"9119", duties:"최소성취 보장지도 업무, 콜럼버스 프로젝트 업무, 교육연구부 업무 지원(전국연합평가 운영)"},
+  {name:"김성은", position:"부장(국어)", dept:"2학년부", dc:"grade2", phone:"010-9507-0041", ext:"9192", duties:"부서 업무 총괄, 2학년 현장체험학습 계획 수립 및 운영, 2학년 학생자치 및 생활지도, 생활교육위원회 총괄 업무"},
+  {name:"주혜영", position:"일본어(2-1)", dept:"2학년부", dc:"grade2", phone:"010-8462-7426", ext:"9129", duties:"학년 현장체험학습(수학여행) 운영, 태블릿 업무, 과학정보부 지원"},
+  {name:"이호상", position:"체육(2-2)", dept:"2학년부", dc:"grade2", phone:"010-7101-3603", ext:"9121", duties:"학년 생활지도 및 성찰 교실 운영, 생활안전기획부 지원"},
+  {name:"백수경", position:"역사(2-3)", dept:"2학년부", dc:"grade2", phone:"010-3318-8462", ext:"9128", duties:"총무, 장학 및 표창, 자기주도학습 관리, 멘토멘티 운영, 수업 공개 나눔, 사정안 작성, 미래교육부 지원"},
+  {name:"임용규", position:"영어(2-4)", dept:"2학년부", dc:"grade2", phone:"010-6431-1916", ext:"9127", duties:"지필평가 및 모의고사 관련, 입시 프로그램, 최소성취보장지도, 기초학력 관련, 교육연구부 지원"},
+  {name:"이선애", position:"일반사회(2-5)", dept:"2학년부", dc:"grade2", phone:"010-7351-4846", ext:"9124", duties:"학교 생활 기록부, 봉사활동 관련, 인문사회부 지원"},
+  {name:"송영한", position:"음악(2-6)", dept:"2학년부", dc:"grade2", phone:"010-9410-6965", ext:"9125", duties:"출결 관리, 학년 생활지도 및 성찰 교실 운영, 교무기획부 지원"},
+  {name:"이병주", position:"수학(2-7)", dept:"2학년부", dc:"grade2", phone:"010-4535-7940", ext:"9126", duties:"학년 현장체험학습(수학여행) 기획 및 정산, 행정실 관련 업무"},
+  {name:"박송이", position:"화학(2-8)", dept:"2학년부", dc:"grade2", phone:"010-9343-3357", ext:"9123", duties:"교육과정 선택 지원, SLAT 계획 및 운영, 학년 프로젝트, 진로진학부 지원"},
+  {name:"유진상", position:"물리(2-9)", dept:"2학년부", dc:"grade2", phone:"010-3896-2238", ext:"9122", duties:"창의적체험활동 운영 및 기획, 학년 프로젝트, 융합과정부 지원"},
+  {name:"조민정", position:"부장(윤리)", dept:"3학년부", dc:"grade3", phone:"010-8663-1210", ext:"9193", duties:"부서 업무 총괄, 대학정보공시, 학교장 추천 전형, 자기주도학습실 운영, 태블릿 관련 업무"},
+  {name:"윤미희", position:"일반사회(3-1)", dept:"3학년부", dc:"grade3", phone:"010-8872-4889", ext:"9131", duties:"학년 학교생활기록부 업무, 학년 봉사활동 및 동아리 업무, 장학 및 대외상"},
+  {name:"김하늘", position:"지리(3-2)", dept:"3학년부", dc:"grade3", phone:"010-9593-3280", ext:"9132", duties:"재학생 3·5·6·7·9·10월 모의고사 시행 및 관리, 재학생 수능 응시원서접수시스템 총괄"},
+  {name:"고미영", position:"화학(3-3)", dept:"3학년부", dc:"grade3", phone:"", ext:"9133", duties:"대학입시설명회 관련 업무(학부모·학생 찾아가는 입시설명회), 모의논술, 진학 관련 교사연수 관련 업무"},
+  {name:"강민정", position:"영어(3-4)", dept:"3학년부", dc:"grade3", phone:"010-3755-3164", ext:"9134", duties:"창의적 체험활동 업무(학년 프로젝트 운영 및 도우미 관리), 수능 이후 역량 프로그램 운영, 수업공개 및 나눔 운영"},
+  {name:"송미희정", position:"수학(3-5)", dept:"3학년부", dc:"grade3", phone:"010-6263-2271", ext:"9135", duties:"졸업앨범 제작 및 앨범 촬영(졸업앨범 준비위원회 운영), 현장체험학습 관련 업무"},
+  {name:"이효정", position:"생물(3-6)", dept:"3학년부", dc:"grade3", phone:"010-8162-6138", ext:"9136", duties:"진로주제 탐구활동 계획 수립, 발표회 준비 및 운영, 졸업식 계획 수립, 졸업 영상과 이벤트 준비, 졸업식 운영"},
+  {name:"김민원", position:"지구과학(3-7)", dept:"3학년부", dc:"grade3", phone:"010-8819-5570", ext:"9137", duties:"방과후 학교 운영계획 수립, 면접반 및 역량사업 운영, 학년 자율 교육과정 운영, 진로상담부 관련 업무"},
+  {name:"이미현", position:"국어(3-8)", dept:"3학년부", dc:"grade3", phone:"010-6390-9924", ext:"9138", duties:"출결 관련 업무(수능 이후 현장체험학습 관리), 위탁 학생 업무, 사정회"},
+  {name:"정서현", position:"영어(3-9)", dept:"3학년부", dc:"grade3", phone:"010-5526-5757", ext:"9139", duties:"학생생활지도(매월 교내 봉사 안내 및 지도), 생활교육위원회 운영(간사역할, 생활안전기획부 관련 업무)"},
+  {name:"박미경", position:"일본어(3-10)", dept:"3학년부", dc:"grade3", phone:"010-9958-0764", ext:"9130", duties:"진학프로그램 관련 업무, 전학공 운영, 학년 총무 및 예산 사용 업무, 교무실 소모품 관리"},
+  {name:"임희경", position:"과장", dept:"행정실", dc:"admin", phone:"010-2469-7554", ext:"9102", duties:"행정실 업무(필수요원)"},
+  {name:"박희경", position:"계장", dept:"행정실", dc:"admin", phone:"010-8994-4191", ext:"9103", duties:"행정실 업무"},
+  {name:"방화연", position:"주무관", dept:"행정실", dc:"admin", phone:"010-6332-9895", ext:"9104", duties:"행정실 업무"},
+  {name:"김해정", position:"주무관", dept:"행정실", dc:"admin", phone:"010-3619-8083", ext:"9105", duties:"행정실 업무"},
+  {name:"최경은", position:"주무관", dept:"행정실", dc:"admin", phone:"010-3615-8479", ext:"9106", duties:"행정실 업무"},
+  {name:"강건업", position:"주무관", dept:"행정실", dc:"admin", phone:"010-8383-9119", ext:"9107", duties:"행정실 업무"},
+  {name:"이예기", position:"주무관(당직)", dept:"행정실", dc:"admin", phone:"010-9589-0777", ext:"9108", duties:"행정실 당직 업무"},
+  {name:"이인숙", position:"주무관", dept:"행정실", dc:"admin", phone:"010-3211-1435", ext:"", duties:"행정실 업무"}
+];
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('results').innerHTML = '<div class="welcome"><div class="icon">👥</div><p>이름을 입력하면<br>교직원 정보를 검색합니다</p></div>';
+  document.getElementById('resultCount').textContent = '';
+}
+
+function doSearch() {
+  var query = document.getElementById('searchInput').value.trim();
+  var clearBtn = document.getElementById('clearBtn');
+  clearBtn.style.display = query ? 'block' : 'none';
+
+  var results = document.getElementById('results');
+  var countEl = document.getElementById('resultCount');
+
+  if (!query) {
+    results.innerHTML = '<div class="welcome"><div class="icon">👥</div><p>이름을 입력하면<br>교직원 정보를 검색합니다</p></div>';
+    countEl.textContent = '';
+    return;
+  }
+
+  var matched = staff.filter(function(s) { return s.name.indexOf(query) !== -1; });
+  countEl.textContent = matched.length > 0 ? '검색 결과: ' + matched.length + '명' : '';
+
+  if (matched.length === 0) {
+    results.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>"' + query + '"을(를) 찾을 수 없습니다.</p><small>이름 전체 또는 일부를 입력해보세요</small></div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < matched.length; i++) {
+    var s = matched[i];
+    var nameHL = s.name.split(query).join('<span class="highlight">' + query + '</span>');
+    var extPhone = s.ext ? '02-6310-' + s.ext : '';
+    var phoneHtml = s.phone ? '<a href="tel:' + s.phone + '">' + s.phone + '</a>' : '<span class="no-phone">미등록</span>';
+    var extHtml = s.ext ? '<div class="contact-value">' + s.ext + '</div>' : '<span class="no-phone">-</span>';
+    var directHtml = extPhone ? '<div class="contact-item full"><div class="contact-label">🏢 직통전화</div><a href="tel:' + extPhone + '">' + extPhone + '</a></div>' : '';
+
+    html += '<div class="card ' + s.dc + '">';
+    html += '<div class="card-header">';
+    html += '<div class="name-block"><div class="name">' + nameHL + '</div><div class="position-text">' + s.position + '</div></div>';
+    html += '<span class="dept-badge">' + s.dept + '</span>';
+    html += '</div>';
+    html += '<div class="contact-row">';
+    html += '<div class="contact-item"><div class="contact-label">📱 휴대전화</div>' + phoneHtml + '</div>';
+    html += '<div class="contact-item"><div class="contact-label">☎ 내선번호</div>' + extHtml + '</div>';
+    html += directHtml;
+    html += '</div>';
+    html += '<div class="duties-section"><div class="duties-label">📋 업무 분장</div><div class="duties-text">' + s.duties + '</div></div>';
+    html += '</div>';
+  }
+  results.innerHTML = html;
+}
+
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') clearSearch();
+});
+</script>
+</body>
+</html>
