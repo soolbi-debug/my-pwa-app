@@ -1,9 +1,10 @@
-const CACHE_NAME = 'gwanghwi-staff-v1';
+const CACHE_NAME = 'gwanghwi-staff-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './wmh.png'
 ];
 
 self.addEventListener('install', e => {
